@@ -2,8 +2,8 @@ package ru.smn.work;
 
 public class Main {
     public static void main(String[] args) {
-
         Account acc = new Account("Sergey");
+
         acc.editCurCount("USD", 1001);
         System.out.println("  do: " + acc.txtGetCurSum());
         acc.setName("Vova");

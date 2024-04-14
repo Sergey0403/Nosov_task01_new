@@ -1,34 +1,31 @@
 package ru.smn.work;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class AccountMemento {
-    public Map<String, int[]> curSum = new HashMap<>();
+    public Map<Account.Curr, int[]> curSum = new HashMap<>();
     public String nameOwner;
-    public Stack<Command> undoStack = new Stack<>();
+    public ArrayDeque<Command> undoStack = new ArrayDeque<>();
 
     /**
      * Запомним состояние счета
      */
-    public AccountMemento(Map<String, int[]> curSum,
+    public AccountMemento(Map<Account.Curr, int[]> curSum,
                           String nameOwner,
-                          Stack<Command> undoStack) {
+                          ArrayDeque<Command> undoStack) {
         this.curSum = new HashMap<>();
-        this.undoStack = new Stack<>();
+        this.undoStack = new ArrayDeque<>();
         copySumCount(curSum, this.curSum);  //копируем мапу, которую запоминаем
         this.nameOwner = nameOwner;
-        this.undoStack = (Stack) undoStack.clone();
+        this.undoStack = undoStack.clone();
     }
 
     /**
      * Копируем мапу в новую..
      */
-    public void copySumCount(Map<String, int[]> mapFrom,
-                             Map<String, int[]> mapTo) {
-        for (Map.Entry<String, int[]> entry : mapFrom.entrySet()) {
+    public void copySumCount(Map<Account.Curr, int[]> mapFrom,
+                             Map<Account.Curr, int[]> mapTo) {
+        for (Map.Entry<Account.Curr, int[]> entry : mapFrom.entrySet()) {
             int[] cnt = Arrays.copyOf(entry.getValue(), entry.getValue().length);
             mapTo.put(entry.getKey(), cnt);
         }

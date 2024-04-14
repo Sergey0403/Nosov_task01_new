@@ -2,6 +2,7 @@ import org.junit.jupiter.api.Test;
 import ru.smn.work.Account;
 import ru.smn.work.AccountMemento;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,7 +45,6 @@ public class Tests {
         try {
             acc.setName(name1);
         } catch (Exception e) {
-            // System.out.println("2-catch2");
         }
         name2 = acc.getName();
         if (name2.isEmpty()) {
@@ -55,12 +55,12 @@ public class Tests {
     @Test
     public void testEditCurCountOk() {
         String name1 = "Sergey";
-        Map<String, int[]> mCurCount;
+        Map<Account.Curr, int[]> mCurCount = new HashMap<>();
         Account acc = new Account(name1);
         try {
             acc.editCurCount("EUR", 1003);
             mCurCount = acc.getCurSum();
-            if (mCurCount.get("EUR")[0] != 1003) {
+            if (mCurCount.get(Account.Curr.EUR)[0] != 1003) {
                 throw new RuntimeException("3-test error - Не записались данные пары валюта-количество!");
             }
         } catch (Exception e) {
@@ -71,7 +71,7 @@ public class Tests {
     @Test
     public void testEditCurCountNotOk() {
         String name1 = "Sergey";
-        Map<String, int[]> mCurCount;
+        Map<Account.Curr, int[]> mCurCount = new HashMap<>();
         Account acc = new Account(name1);
         Boolean serror = true;
 
@@ -81,7 +81,7 @@ public class Tests {
             serror = false;
         }
         mCurCount = acc.getCurSum();
-        if (serror || mCurCount.size() > 0 && mCurCount.get("USD")[0] == -2222) {
+        if (serror || mCurCount.size() > 0 && mCurCount.get(Account.Curr.USD)[0] == -2222) {
             throw new RuntimeException("5-test error - Разрешен ввод отрицательного количества!");
         }
     }
@@ -105,15 +105,15 @@ public class Tests {
         String cur4;
         Account acc = new Account(name1);
         acc.editCurCount("USD", 1001);
-        cur1 = acc.txtGetCurSum1();
+        cur1 = acc.txtGetcurSum1();
         acc.editCurCount("USD", 2001);
-        cur2 = acc.txtGetCurSum1();
+        cur2 = acc.txtGetcurSum1();
         acc.editCurCount("RUR", 1002);
         acc.undo();
-        cur3 = acc.txtGetCurSum1();
+        cur3 = acc.txtGetcurSum1();
         assertEquals(cur2, cur3);
         acc.undo();
-        cur4 = acc.txtGetCurSum1();
+        cur4 = acc.txtGetcurSum1();
         assertEquals(cur1, cur4);
     }
 
@@ -144,17 +144,17 @@ public class Tests {
         Account acc = new Account(name1);
         acc.editCurCount("USD", 1001);
         acc.editCurCount("RUR", 1002);
-        cur1 = acc.txtGetCurSum1();
+        cur1 = acc.txtGetcurSum1();
 
         AccountMemento accMem = acc.saveState();   //запомним состояние счета
 
         acc.editCurCount("USD", 2001);
         acc.editCurCount("BYR", 1004);
-        cur2 = acc.txtGetCurSum1();
+        cur2 = acc.txtGetcurSum1();
 
         acc.restoreState(accMem);   //восстановление запомненного состояние счета
 
-        cur3 = acc.txtGetCurSum1();
+        cur3 = acc.txtGetcurSum1();
         assertEquals(cur1, cur3);
     }
 

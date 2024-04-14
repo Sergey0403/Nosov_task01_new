@@ -3,11 +3,12 @@ package ru.smn.work;
 import java.util.*;
 
 public class Account {
-    String controlCurrency = "RUR,USD,EUR,CNY,BYR,TRY"; //разрешенные валюты
-    Map<String, int[]> curSum = new HashMap<>();
+    static public enum Curr {RUR, USD, EUR, CNY, BYR, TRY};
 
     String nameOwner;
-    private Stack<Command> undoStack = new Stack<>();
+    private ArrayDeque<Command> undoStack = new ArrayDeque<>();
+
+    Map<Curr, int[]> curSum = new HashMap<>();
 
     public Account(String name) {
         if (name == null || name.isBlank())
@@ -15,8 +16,34 @@ public class Account {
         this.nameOwner = name;
     }
 
-    public Map<String, int[]> getCurSum() {
-        return curSum;
+    /**
+     * Редактируем счет и добавляем строку в стек undoStack для восстановления
+     */
+    public void editCurCount(String currency, int count) {
+        Curr curr;
+        String serror = "";
+
+        if (currency == null) {
+            throw new NullPointerException("Error - Передали нулевой параметр по валюте!");
+        }
+        try {
+            curr = Curr.valueOf(currency);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Error - Валюта " + currency + " не входит в список разрешенных!");
+        }
+        if (count < 0) serror += " Количество валюты не может быть отрицательным!";
+        if (!serror.isEmpty()) {
+            throw new IllegalArgumentException(serror);
+        }
+        Command cmd = new NewCommandAccountMap(curr, count, curSum);
+        execute(cmd);
+    }
+
+    public Map<Curr, int[]> getCurSum() {
+        // Map<String, int[]> curSumClone = new HashMap<>();
+        Map<Curr, int[]> curSumClone = new HashMap<>();
+        curSumClone.putAll(curSum);
+        return curSumClone;
     }
 
     /**
@@ -25,8 +52,8 @@ public class Account {
     public String txtGetCurSum() {
         String txt = "{";
         String zap = "";
-        for (Map.Entry<String, int[]> entry : curSum.entrySet()) {
-            String key = entry.getKey();
+        for (Map.Entry<Curr, int[]> entry : curSum.entrySet()) {
+            Curr key = entry.getKey();
             int[] val = curSum.get(key);
             String v0 = String.valueOf(val[0]);  //values[0];
             String v1 = String.valueOf(val[1]);  //values[0];
@@ -40,11 +67,11 @@ public class Account {
     /**
      * Выдача пары валюта-количество (без предыдущего значения количества) в текстовом виде
      */
-    public String txtGetCurSum1() {
+    public String txtGetcurSum1() {
         String txt = "{";
         String zap = "";
-        for (Map.Entry<String, int[]> entry : curSum.entrySet()) {
-            String key = entry.getKey();
+        for (Map.Entry<Curr, int[]> entry : curSum.entrySet()) {
+            Curr key = entry.getKey();
             int[] val = curSum.get(key);
             String v0 = String.valueOf(val[0]);  //values[0];
             String v1 = String.valueOf(val[1]);  //values[0];
@@ -53,7 +80,6 @@ public class Account {
         }
         txt += "}";
         return txt;
-
     }
 
     public String getName() {
@@ -63,22 +89,9 @@ public class Account {
     public void setName(String name) {
         if (name == null || name.isBlank())
             throw new IllegalArgumentException("Имя владельца счета не может быть пустым!");
-        Command cmd = new NewCommandAccount(name, this.nameOwner);
+        Command cmd = new NewCommandAccountName(name, this.nameOwner);
         execute(cmd);
         this.nameOwner = name;
-    }
-    /**
-     * Редактируем счет и добавляем строку в стек undoStack для восстановления
-     */
-    public void editCurCount(String curr, int count) {
-        String serror = "";
-        if (controlCurrency.indexOf(curr) < 0) serror += "Валюты " + curr + " нет в списке разрешенных валют!";
-        if (count < 0) serror += " Количество валюты не может быть отрицательным!";
-        if (!serror.isEmpty()) {
-            throw new IllegalArgumentException(serror);
-        }
-        Command cmd = new NewCommandAccount(curr, count, curSum);
-        execute(cmd);
     }
 
     /**
@@ -119,39 +132,34 @@ public class Account {
         this.curSum = new HashMap<>();
         memento.copySumCount(memento.curSum, this.curSum);
         this.nameOwner = memento.nameOwner;
-        this.undoStack= (Stack)memento.undoStack.clone();
+        this.undoStack = memento.undoStack.clone();
     }
-    final class NewCommandAccount implements Command {
-        private String curr;  //вводимая валюта
+
+    final class NewCommandAccountMap implements Command {
+        private Curr curr;  //вводимая валюта
         private int count;  //вводимое количество валюты
         private int[] counts = new int[2];  //массив "Количество (новое, старое)"
-        private Map<String, int[]> curSum = new HashMap<>();  //мапа "Валюта"-"Количество (новое, старое)"
-        private String name;  //вводимое имя владельца счета
-        private String nameOld;  //имя владельца счета старое
-        private String flag;
+        private Map<Curr, int[]> curSum = new HashMap<>();  //мапа "Валюта"-"Количество (новое, старое)"
 
-        public NewCommandAccount(String curr, int count, Map<String, int[]> curSum) {
+        public NewCommandAccountMap(Curr curr, int count, Map<Curr, int[]> curSum) {
             this.curr = curr;
             this.count = count;
             this.curSum = curSum;
-            this.flag = "curSum";  //признак изменения пары валюта-количество
-        }
-
-        public NewCommandAccount(String name, String nameOld) {
-            this.name = name;
-            this.nameOld = nameOld;
-            this.flag = "name";  //признак изменения пары валюта-количество
         }
 
         public int editCurCount() {
+
             int[] prevCount = new int[2];
-            prevCount = curSum.get(curr);   //предыдущее значение
-            if (prevCount != null) {
+
+            try {
+                prevCount = curSum.get(curr);   //предыдущее значение
                 counts[1] = prevCount[0]; //запомним предыдущее значение для восстановления
+            } catch (Exception e) {
             }
             counts[0] = count;
             curSum.put(curr, counts);
             return counts[1];   //возвращаем предыдущее значение
+
         }
 
         public int undoEditCurCount() {
@@ -166,6 +174,26 @@ public class Account {
             return prev;   //возвращаем предыдущее значение
         }
 
+        @Override
+        public void execute() {
+            editCurCount();
+        }
+
+        @Override
+        public void undo() {
+            undoEditCurCount();
+        }
+    }
+
+    final class NewCommandAccountName implements Command {
+        private String name;  //вводимое имя владельца счета
+        private String nameOld;  //имя владельца счета старое
+
+        public NewCommandAccountName(String name, String nameOld) {
+            this.name = name;
+            this.nameOld = nameOld;
+        }
+
         public void editName() {
         }
 
@@ -177,30 +205,12 @@ public class Account {
 
         @Override
         public void execute() {
-            switch (flag) {
-                case ("curSum"):
-                    editCurCount();
-                    break;
-                case ("name"):
-                    editName();
-                    break;
-                default:
-                    break;
-            }
+            editName();
         }
 
         @Override
         public void undo() {
-            switch (flag) {
-                case ("curSum"):
-                    undoEditCurCount();
-                    break;
-                case ("name"):
-                    undoEditName();
-                    break;
-                default:
-                    break;
-            }
+            undoEditName();
         }
     }
 }
