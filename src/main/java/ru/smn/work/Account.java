@@ -5,10 +5,10 @@ import java.util.*;
 public class Account {
     static public enum Curr {RUR, USD, EUR, CNY, BYR, TRY};
 
-    String nameOwner;
+    private String nameOwner;
     private ArrayDeque<Command> undoStack = new ArrayDeque<>();
 
-    Map<Curr, int[]> curSum = new HashMap<>();
+    private Map<Curr, int[]> curSum = new HashMap<>();
 
     public Account(String name) {
         if (name == null || name.isBlank())
